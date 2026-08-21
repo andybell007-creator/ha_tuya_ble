@@ -612,6 +612,10 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
                     name="Thermostatic Radiator Valve",
                 ),
             ),
+            "vmdizama": TuyaBLEProductInfo(
+                name="MaXpeedingRods Parking Diesel Heater",
+                manufacturer="MaXpeedingRods",
+            ),
         },
     ),
     "wsdcg": TuyaBLECategoryInfo(
