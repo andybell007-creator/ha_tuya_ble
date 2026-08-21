@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-
 import logging
 
 from homeassistant.components.climate import (
@@ -44,13 +43,23 @@ class TuyaBLEClimateMapping:
 
     preset_mode_dp_ids: dict[str, int] | None = None
 
+    # Extra functional DPs (modes, levels, work state, unit conversion)
+    mode_dp_id: int = 0
+    modes: list[str] | None = None
+
+    level_dp_id: int = 0
+    levels: list[str] | None = None
+
+    work_state_dp_id: int = 0
+    temp_unit_convert_dp_id: int = 0
+
     temperature_unit: str = UnitOfTemperature.CELSIUS
     current_temperature_dp_id: int = 0
     current_temperature_coefficient: float = 1.0
     target_temperature_dp_id: int = 0
     target_temperature_coefficient: float = 1.0
-    target_temperature_max: float = 30.0
-    target_temperature_min: float = 5
+    target_temperature_max: float = 40.0
+    target_temperature_min: float = 0.0
     target_temperature_step: float = 1.0
 
     current_humidity_dp_id: int = 0
@@ -74,44 +83,8 @@ mapping: dict[str, TuyaBLECategoryClimateMapping] = {
                 [
                     "drlajpqc",
                     "nhj2j7su",
-                    "zmachryv",
-                ],  # Thermostatic Radiator Valve
+                ],
                 [
-                    # Thermostatic Radiator Valve
-                    # - [x] 8   - Window
-                    # - [x] 10  - Antifreeze
-                    # - [x] 27  - Calibration
-                    # - [x] 40  - Lock
-                    # - [x] 101 - Switch
-                    # - [x] 102 - Current
-                    # - [x] 103 - Target
-                    # - [ ] 104 - Heating time
-                    # - [x] 105 - Battery power alarm
-                    # - [x] 106 - Away
-                    # - [x] 107 - Programming mode
-                    # - [x] 108 - Programming switch
-                    # - [ ] 109 - Programming data (deprecated - do not delete)
-                    # - [ ] 110 - Historical data protocol (Day-Target temperature)
-                    # - [ ] 111 - System Time Synchronization
-                    # - [ ] 112 - Historical data (Week-Target temperature)
-                    # - [ ] 113 - Historical data (Month-Target temperature)
-                    # - [ ] 114 - Historical data (Year-Target temperature)
-                    # - [ ] 115 - Historical data (Day-Current temperature)
-                    # - [ ] 116 - Historical data (Week-Current temperature)
-                    # - [ ] 117 - Historical data (Month-Current temperature)
-                    # - [ ] 118 - Historical data (Year-Current temperature)
-                    # - [ ] 119 - Historical data (Day-motor opening degree)
-                    # - [ ] 120 - Historical data (Week-motor opening degree)
-                    # - [ ] 121 - Historical data (Month-motor opening degree)
-                    # - [ ] 122 - Historical data (Year-motor opening degree)
-                    # - [ ] 123 - Programming data (Monday)
-                    # - [ ] 124 - Programming data (Tuesday)
-                    # - [ ] 125 - Programming data (Wednesday)
-                    # - [ ] 126 - Programming data (Thursday)
-                    # - [ ] 127 - Programming data (Friday)
-                    # - [ ] 128 - Programming data (Saturday)
-                    # - [ ] 129 - Programming data (Sunday)
-                    # - [x] 130 - Water scale
                     TuyaBLEClimateMapping(
                         description=ClimateEntityDescription(
                             key="thermostatic_radiator_valve",
@@ -120,11 +93,11 @@ mapping: dict[str, TuyaBLECategoryClimateMapping] = {
                         hvac_switch_mode=HVACMode.HEAT,
                         hvac_modes=[HVACMode.OFF, HVACMode.HEAT],
                         preset_mode_dp_ids={PRESET_AWAY: 106, PRESET_NONE: 106},
-                        current_temperature_dp_id=102,  # Merge conflict: current_temperature_dp_id=3 for zmachryv?
+                        current_temperature_dp_id=102,
                         current_temperature_coefficient=10.0,
                         target_temperature_coefficient=10.0,
                         target_temperature_step=0.5,
-                        target_temperature_dp_id=103,  # Merge conflict: current_temperature_dp_id=2 for zmachryv?
+                        target_temperature_dp_id=103,
                         target_temperature_min=5.0,
                         target_temperature_max=30.0,
                     ),
@@ -132,14 +105,40 @@ mapping: dict[str, TuyaBLECategoryClimateMapping] = {
             ),
         },
     ),
+    "qn": TuyaBLECategoryClimateMapping(
+        products={
+            "vmdizama": [
+                TuyaBLEClimateMapping(
+                    description=ClimateEntityDescription(
+                        key="parking_heater",
+                    ),
+                    hvac_switch_dp_id=1,
+                    hvac_switch_mode=HVACMode.HEAT,
+                    hvac_modes=[HVACMode.OFF, HVACMode.HEAT],
+                    current_temperature_dp_id=3,
+                    current_temperature_coefficient=1.0,
+                    target_temperature_dp_id=2,
+                    target_temperature_coefficient=1.0,
+                    target_temperature_step=1.0,
+                    target_temperature_min=0.0,
+                    target_temperature_max=40.0,
+                    mode_dp_id=4,
+                    modes=["smart", "auto"],
+                    level_dp_id=5,
+                    levels=["Lowest", "Low", "Medium", "High", "Highest"],
+                    work_state_dp_id=6,
+                    temp_unit_convert_dp_id=7,
+                ),
+            ],
+        },
+    ),
     "wkf": TuyaBLECategoryClimateMapping(
         products={
             **dict.fromkeys(
                 [
                     "llflaywg",
-                ],  # Thermostatic Radiator Valve
+                ],
                 [
-                    # Thermostatic Radiator Valve
                     TuyaBLEClimateMapping(
                         description=ClimateEntityDescription(
                             key="thermostatic_radiator_valve",
@@ -193,6 +192,7 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
         self._attr_hvac_mode = HVACMode.HEAT
         self._attr_preset_mode = PRESET_NONE
         self._attr_hvac_action = HVACAction.HEATING
+        self._attr_extra_state_attributes = {}
 
         if mapping.hvac_mode_dp_id and mapping.hvac_modes:
             self._attr_hvac_modes = mapping.hvac_modes
@@ -202,6 +202,13 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
         if mapping.preset_mode_dp_ids:
             self._attr_supported_features |= ClimateEntityFeature.PRESET_MODE
             self._attr_preset_modes = list(mapping.preset_mode_dp_ids.keys())
+        elif mapping.levels or mapping.modes:
+            self._attr_supported_features |= ClimateEntityFeature.PRESET_MODE
+            self._attr_preset_modes = []
+            if mapping.modes:
+                self._attr_preset_modes.extend(mapping.modes)
+            if mapping.levels:
+                self._attr_preset_modes.extend(mapping.levels)
 
         if mapping.target_temperature_dp_id != 0:
             self._attr_supported_features |= ClimateEntityFeature.TARGET_TEMPERATURE
@@ -230,7 +237,7 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
             datapoint = self._device.datapoints[self._mapping.target_temperature_dp_id]
             if datapoint:
                 self._attr_target_temperature = (
-                    datapoint.value * self._mapping.target_temperature_step
+                    datapoint.value / self._mapping.target_temperature_coefficient
                 )
 
         if self._mapping.current_humidity_dp_id != 0:
@@ -246,6 +253,36 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
                 self._attr_target_humidity = (
                     datapoint.value / self._mapping.target_humidity_coefficient
                 )
+
+        if self._mapping.mode_dp_id != 0 and self._mapping.modes:
+            datapoint = self._device.datapoints[self._mapping.mode_dp_id]
+            if datapoint and datapoint.value < len(self._mapping.modes):
+                mode_val = self._mapping.modes[datapoint.value]
+                self._attr_extra_state_attributes["mode"] = mode_val
+                self._attr_preset_mode = mode_val
+
+        if self._mapping.level_dp_id != 0 and self._mapping.levels:
+            datapoint = self._device.datapoints[self._mapping.level_dp_id]
+            if datapoint and datapoint.value < len(self._mapping.levels):
+                level_val = self._mapping.levels[datapoint.value]
+                self._attr_extra_state_attributes["level"] = level_val
+                self._attr_preset_mode = level_val
+
+        if self._mapping.work_state_dp_id != 0:
+            datapoint = self._device.datapoints[self._mapping.work_state_dp_id]
+            if datapoint:
+                work_states = ["heating"]
+                if datapoint.value < len(work_states):
+                    self._attr_extra_state_attributes["work_state"] = work_states[datapoint.value]
+                else:
+                    self._attr_extra_state_attributes["work_state"] = str(datapoint.value)
+
+        if self._mapping.temp_unit_convert_dp_id != 0:
+            datapoint = self._device.datapoints[self._mapping.temp_unit_convert_dp_id]
+            if datapoint:
+                units = ["c", "f"]
+                if datapoint.value < len(units):
+                    self._attr_extra_state_attributes["temp_unit_convert"] = units[datapoint.value]
 
         if self._mapping.hvac_mode_dp_id != 0 and self._mapping.hvac_modes:
             datapoint = self._device.datapoints[self._mapping.hvac_mode_dp_id]
@@ -288,8 +325,7 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
     async def async_set_temperature(self, **kwargs) -> None:
         """Set new target temperature."""
         if self._mapping.target_temperature_dp_id != 0:
-            int_value = int(kwargs["temperature"] * 2)
-            _LOGGER.error(int_value)
+            int_value = int(kwargs["temperature"] * self._mapping.target_temperature_coefficient)
             datapoint = self._device.datapoints.get_or_create(
                 self._mapping.target_temperature_dp_id,
                 TuyaBLEDataPointType.DT_VALUE,
@@ -319,7 +355,7 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
         ):
             int_value = self._mapping.hvac_modes.index(hvac_mode)
             datapoint = self._device.datapoints.get_or_create(
-                self._mapping.target_humidity_dp_id,
+                self._mapping.hvac_mode_dp_id,
                 TuyaBLEDataPointType.DT_VALUE,
                 int_value,
             )
@@ -337,15 +373,32 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set new preset mode."""
-        if self._mapping.preset_mode_dp_ids:
+        if self._mapping.modes and preset_mode in self._mapping.modes:
+            int_value = self._mapping.modes.index(preset_mode)
+            datapoint = self._device.datapoints.get_or_create(
+                self._mapping.mode_dp_id,
+                TuyaBLEDataPointType.DT_VALUE,
+                int_value,
+            )
+            if datapoint:
+                self._hass.create_task(datapoint.set_value(int_value))
+        elif self._mapping.levels and preset_mode in self._mapping.levels:
+            int_value = self._mapping.levels.index(preset_mode)
+            datapoint = self._device.datapoints.get_or_create(
+                self._mapping.level_dp_id,
+                TuyaBLEDataPointType.DT_VALUE,
+                int_value,
+            )
+            if datapoint:
+                self._hass.create_task(datapoint.set_value(int_value))
+        elif self._mapping.preset_mode_dp_ids:
             datapoint: TuyaBLEDataPoint | None = None
             bool_value = False
 
             keys = [x for x in self._mapping.preset_mode_dp_ids.keys()]
             values = [
                 x for x in self._mapping.preset_mode_dp_ids.values()
-            ]  # Get all DP IDs
-            # TRVs with only Away and None modes can be set with a single datapoint and use a single DP ID
+            ]
             if all(values[0] == elem for elem in values) and keys[0] == PRESET_AWAY:
                 for dp_id in values:
                     bool_value = preset_mode == PRESET_AWAY
