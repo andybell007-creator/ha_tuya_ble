@@ -70,6 +70,17 @@ class TuyaBLEWaterValveInfo:
 
 
 @dataclass
+class TuyaBLEHeaterInfo:
+    """Model a parking diesel heater"""
+
+    switch: str = "switch"
+    temp_set: str = "temp_set"
+    mode: str = "mode"
+    level: str = "level"
+    temp_unit_convert: str = "temp_unit_convert"
+
+
+@dataclass
 class TuyaBLEProductInfo:
     """Model product info"""
 
@@ -77,6 +88,7 @@ class TuyaBLEProductInfo:
     manufacturer: str = DEVICE_DEF_MANUFACTURER
     fingerbot: TuyaBLEFingerbotInfo | None = None
     watervalve: TuyaBLEWaterValveInfo | None = None
+    heater: TuyaBLEHeaterInfo | None = None
     lock: int | None = None
 
 
@@ -147,7 +159,6 @@ class TuyaBLEEntity(CoordinatorEntity):
             if code and value is not None:
                 dttype = self.get_dptype(code)
                 if isinstance(value, str):
-                    # We suppose here that cloud JSON type are sent as string
                     if dttype in (DPType.STRING, DPType.JSON):
                         self.send_dp_value(code, TuyaBLEDataPointType.DT_STRING, value)
                     elif dttype == DPType.ENUM:
@@ -206,8 +217,6 @@ class TuyaBLEEntity(CoordinatorEntity):
         if prefer_function:
             order = ["function", "status_range"]
 
-        # When we are not looking for a specific datatype, we can append status for
-        # searching
         if not dptype:
             order.append("status")
 
@@ -351,7 +360,7 @@ class TuyaBLECategoryInfo:
 devices_database: dict[str, TuyaBLECategoryInfo] = {
     "co2bj": TuyaBLECategoryInfo(
         products={
-            "59s19z5m": TuyaBLEProductInfo(  # device product_id
+            "59s19z5m": TuyaBLEProductInfo(
                 name="CO2 Detector",
             ),
         },
@@ -361,7 +370,7 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
             **dict.fromkeys(
                 [
                     "llflaywg",
-                ],  # device product_id
+                ],
                 TuyaBLEProductInfo(
                     name="Thermostatic Radiator Valve",
                 ),
@@ -398,7 +407,7 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
                     "a6nttc41",
                     "7a4xvbtt",
                 ],
-                TuyaBLEProductInfo(  # device product_id
+                TuyaBLEProductInfo(
                     name="Smart Lock",
                     lock=1,
                 ),
@@ -437,25 +446,25 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
         products={
             **dict.fromkeys(
                 ["vllfabvs"],
-                TuyaBLEProductInfo(  # device product_id
+                TuyaBLEProductInfo(
                     name="PARKSIDE Smart battery 4Ah",
                 ),
             ),
             **dict.fromkeys(
                 ["z5ztlw3k"],
-                TuyaBLEProductInfo(  # device product_id
+                TuyaBLEProductInfo(
                     name="PARKSIDE Smart battery 4Ah",
                 ),
             ),
             **dict.fromkeys(
                 ["ajrhf1aj"],
-                TuyaBLEProductInfo(  # device product_id
+                TuyaBLEProductInfo(
                     name="PARKSIDE Smart battery 8Ah",
                 ),
             ),
             **dict.fromkeys(
                 ["fay1puxy"],
-                TuyaBLEProductInfo(  # device product_id
+                TuyaBLEProductInfo(
                     name="PARKSIDE Smart battery 12Ah",
                 ),
             ),
@@ -464,7 +473,7 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
     "jtmspro": TuyaBLECategoryInfo(
         products={
             "y2yaegze": TuyaBLEProductInfo(name="Drawer Lock CTL20H", lock=1),
-            "hc7n0urm": TuyaBLEProductInfo(  # device product_id
+            "hc7n0urm": TuyaBLEProductInfo(
                 name="A1 Ultra-JM",
             ),
             "stugc8dl": TuyaBLEProductInfo(name="HU06 Smart Lock", lock=1),
@@ -489,7 +498,7 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
     ),
     "szjqr": TuyaBLECategoryInfo(
         products={
-            "3yqdo5yt": TuyaBLEProductInfo(  # device product_id
+            "3yqdo5yt": TuyaBLEProductInfo(
                 name="CUBETOUCH 1s",
                 fingerbot=TuyaBLEFingerbotInfo(
                     switch=1,
@@ -500,7 +509,7 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
                     reverse_positions=4,
                 ),
             ),
-            "xhf790if": TuyaBLEProductInfo(  # device product_id
+            "xhf790if": TuyaBLEProductInfo(
                 name="CubeTouch II",
                 fingerbot=TuyaBLEFingerbotInfo(
                     switch=1,
@@ -520,7 +529,7 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
                     "6jcvqwh0",
                     "riecov42",
                     "h8kdwywx",
-                ],  # device product_ids
+                ],
                 TuyaBLEProductInfo(
                     name="Fingerbot Plus",
                     fingerbot=TuyaBLEFingerbotInfo(
@@ -544,7 +553,7 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
                     "bnt7wajf",
                     "rvdceqjh",
                     "5xhbk964",
-                ],  # device product_ids
+                ],
                 TuyaBLEProductInfo(
                     name="Fingerbot",
                     fingerbot=TuyaBLEFingerbotInfo(
@@ -580,7 +589,7 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
                     "bs3ubslo",
                     "gnpbj0bq",
                     "6jcvqwh0",
-                ],  # device product_ids
+                ],
                 TuyaBLEProductInfo(
                     name="Fingerbot Plus",
                     fingerbot=TuyaBLEFingerbotInfo(
@@ -607,14 +616,25 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
                     "drlajpqc",
                     "nhj2j7su",
                     "zmachryv",
-                ],  # device product_id
+                ],
                 TuyaBLEProductInfo(
                     name="Thermostatic Radiator Valve",
                 ),
             ),
+        },
+    ),
+    "qn": TuyaBLECategoryInfo(
+        products={
             "vmdizama": TuyaBLEProductInfo(
                 name="MaXpeedingRods Parking Diesel Heater",
                 manufacturer="MaXpeedingRods",
+                heater=TuyaBLEHeaterInfo(
+                    switch="switch",
+                    temp_set="temp_set",
+                    mode="mode",
+                    level="level",
+                    temp_unit_convert="temp_unit_convert",
+                ),
             ),
         },
     ),
@@ -655,7 +675,7 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
                     "qycalacn",
                     "fnlw6npo",
                     "jjqi2syk",
-                ],  # device product_ids
+                ],
                 TuyaBLEProductInfo(
                     name="Irrigation computer",
                 ),
@@ -666,7 +686,7 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
                     "0axr5s0b",
                     "e1poaiwa",
                     "d4vpmigg",
-                ],  # device product_id
+                ],
                 TuyaBLEProductInfo(
                     name="Valve controller",
                     watervalve=TuyaBLEWaterValveInfo(
@@ -717,7 +737,7 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
                 name="YZD02B dual irrigation timer",
             ),
             **dict.fromkeys(
-                ["6pahkcau", "hfgdqhho"],  # PPB A1  # SGW08  # device product_id
+                ["6pahkcau", "hfgdqhho"],
                 TuyaBLEProductInfo(
                     name="Irrigation computer",
                 ),
