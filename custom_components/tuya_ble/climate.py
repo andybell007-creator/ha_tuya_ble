@@ -43,6 +43,16 @@ class TuyaBLEClimateMapping:
 
     preset_mode_dp_ids: dict[str, int] | None = None
 
+    # Extra functional DPs (modes, levels, work state, unit conversion)
+    mode_dp_id: int = 0
+    modes: list[str] | None = None
+
+    level_dp_id: int = 0
+    levels: list[str] | None = None
+
+    work_state_dp_id: int = 0
+    temp_unit_convert_dp_id: int = 0
+
     temperature_unit: str = UnitOfTemperature.CELSIUS
     current_temperature_dp_id: int = 0
     current_temperature_coefficient: float = 1.0
@@ -112,6 +122,12 @@ mapping: dict[str, TuyaBLECategoryClimateMapping] = {
                     target_temperature_step=1.0,
                     target_temperature_min=0.0,
                     target_temperature_max=40.0,
+                    mode_dp_id=4,
+                    modes=["smart", "auto"],
+                    level_dp_id=5,
+                    levels=["1", "2", "3", "4", "5"],
+                    work_state_dp_id=6,
+                    temp_unit_convert_dp_id=7,
                 ),
             ],
         },
@@ -176,6 +192,7 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
         self._attr_hvac_mode = HVACMode.HEAT
         self._attr_preset_mode = PRESET_NONE
         self._attr_hvac_action = HVACAction.HEATING
+        self._attr_extra_state_attributes = {}
 
         if mapping.hvac_mode_dp_id and mapping.hvac_modes:
             self._attr_hvac_modes = mapping.hvac_modes
@@ -185,6 +202,9 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
         if mapping.preset_mode_dp_ids:
             self._attr_supported_features |= ClimateEntityFeature.PRESET_MODE
             self._attr_preset_modes = list(mapping.preset_mode_dp_ids.keys())
+        elif mapping.level_dp_id and mapping.levels:
+            self._attr_supported_features |= ClimateEntityFeature.PRESET_MODE
+            self._attr_preset_modes = mapping.levels
 
         if mapping.target_temperature_dp_id != 0:
             self._attr_supported_features |= ClimateEntityFeature.TARGET_TEMPERATURE
@@ -229,6 +249,31 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
                 self._attr_target_humidity = (
                     datapoint.value / self._mapping.target_humidity_coefficient
                 )
+
+        if self._mapping.mode_dp_id != 0 and self._mapping.modes:
+            datapoint = self._device.datapoints[self._mapping.mode_dp_id]
+            if datapoint and datapoint.value < len(self._mapping.modes):
+                self._attr_extra_state_attributes["mode"] = self._mapping.modes[datapoint.value]
+
+        if self._mapping.level_dp_id != 0 and self._mapping.levels:
+            datapoint = self._device.datapoints[self._mapping.level_dp_id]
+            if datapoint and datapoint.value < len(self._mapping.levels):
+                level_val = self._mapping.levels[datapoint.value]
+                self._attr_extra_state_attributes["level"] = level_val
+                if not self._mapping.preset_mode_dp_ids:
+                    self._attr_preset_mode = level_val
+
+        if self._mapping.work_state_dp_id != 0:
+            datapoint = self._device.datapoints[self._mapping.work_state_dp_id]
+            if datapoint:
+                self._attr_extra_state_attributes["work_state"] = str(datapoint.value)
+
+        if self._mapping.temp_unit_convert_dp_id != 0:
+            datapoint = self._device.datapoints[self._mapping.temp_unit_convert_dp_id]
+            if datapoint:
+                units = ["c", "f"]
+                if datapoint.value < len(units):
+                    self._attr_extra_state_attributes["temp_unit_convert"] = units[datapoint.value]
 
         if self._mapping.hvac_mode_dp_id != 0 and self._mapping.hvac_modes:
             datapoint = self._device.datapoints[self._mapping.hvac_mode_dp_id]
@@ -319,7 +364,16 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set new preset mode."""
-        if self._mapping.preset_mode_dp_ids:
+        if self._mapping.level_dp_id != 0 and self._mapping.levels and preset_mode in self._mapping.levels:
+            int_value = self._mapping.levels.index(preset_mode)
+            datapoint = self._device.datapoints.get_or_create(
+                self._mapping.level_dp_id,
+                TuyaBLEDataPointType.DT_VALUE,
+                int_value,
+            )
+            if datapoint:
+                self._hass.create_task(datapoint.set_value(int_value))
+        elif self._mapping.preset_mode_dp_ids:
             datapoint: TuyaBLEDataPoint | None = None
             bool_value = False
 
