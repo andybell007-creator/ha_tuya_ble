@@ -58,8 +58,8 @@ class TuyaBLEClimateMapping:
     current_temperature_coefficient: float = 1.0
     target_temperature_dp_id: int = 0
     target_temperature_coefficient: float = 1.0
-    target_temperature_max: float = 30.0
-    target_temperature_min: float = 5
+    target_temperature_max: float = 40.0
+    target_temperature_min: float = 0.0
     target_temperature_step: float = 1.0
 
     current_humidity_dp_id: int = 0
@@ -125,7 +125,7 @@ mapping: dict[str, TuyaBLECategoryClimateMapping] = {
                     mode_dp_id=4,
                     modes=["smart", "auto"],
                     level_dp_id=5,
-                    levels=["1", "2", "3", "4", "5"],
+                    levels=["Lowest", "Low", "Medium", "High", "Highest"],
                     work_state_dp_id=6,
                     temp_unit_convert_dp_id=7,
                 ),
@@ -271,7 +271,11 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
         if self._mapping.work_state_dp_id != 0:
             datapoint = self._device.datapoints[self._mapping.work_state_dp_id]
             if datapoint:
-                self._attr_extra_state_attributes["work_state"] = str(datapoint.value)
+                work_states = ["heating"]
+                if datapoint.value < len(work_states):
+                    self._attr_extra_state_attributes["work_state"] = work_states[datapoint.value]
+                else:
+                    self._attr_extra_state_attributes["work_state"] = str(datapoint.value)
 
         if self._mapping.temp_unit_convert_dp_id != 0:
             datapoint = self._device.datapoints[self._mapping.temp_unit_convert_dp_id]
