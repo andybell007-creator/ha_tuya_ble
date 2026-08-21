@@ -93,18 +93,21 @@ mapping: dict[str, TuyaBLECategoryClimateMapping] = {
                     ),
                 ],
             ),
-            # MaXpeedingRods / Generic Tuya Diesel Parking Heater (vmdizama)
+        },
+    ),
+    "qn": TuyaBLECategoryClimateMapping(
+        products={
             "vmdizama": [
                 TuyaBLEClimateMapping(
                     description=ClimateEntityDescription(
                         key="parking_heater",
                     ),
-                    hvac_switch_dp_id=1,  # Corresponds to 'switch' DP ID
+                    hvac_switch_dp_id=1,
                     hvac_switch_mode=HVACMode.HEAT,
                     hvac_modes=[HVACMode.OFF, HVACMode.HEAT],
-                    current_temperature_dp_id=3,  # Corresponds to 'temp_current'
+                    current_temperature_dp_id=3,
                     current_temperature_coefficient=1.0,
-                    target_temperature_dp_id=2,  # Corresponds to 'temp_set'
+                    target_temperature_dp_id=2,
                     target_temperature_coefficient=1.0,
                     target_temperature_step=1.0,
                     target_temperature_min=0.0,
