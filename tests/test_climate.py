@@ -2,7 +2,12 @@
 
 from unittest.mock import Mock, AsyncMock
 from homeassistant.core import HomeAssistant
-from homeassistant.components.climate import ClimateEntityDescription, HVACMode, PRESET_AWAY, PRESET_NONE
+from homeassistant.components.climate import (
+    ClimateEntityDescription,
+    HVACMode,
+    PRESET_AWAY,
+    PRESET_NONE,
+)
 from custom_components.tuya_ble.climate import TuyaBLEClimate, TuyaBLEClimateMapping
 from custom_components.tuya_ble.tuya_ble import TuyaBLEDataPointType
 
@@ -19,7 +24,7 @@ CONFIG = {
                 "id": "103",
                 "platform": "climate",
                 "restore_on_reconnect": False,
-                "address": "12:23:44"
+                "address": "12:23:44",
             }
         ],
     }
@@ -30,7 +35,12 @@ async def test_climate(hass: HomeAssistant) -> None:
     from pytest_homeassistant_custom_component.common import MockConfigEntry
     from custom_components.tuya_ble.const import DOMAIN
     from custom_components.tuya_ble.cloud import HASSTuyaBLEDeviceManager
-    from custom_components.tuya_ble.devices import TuyaBLEDevice, TuyaBLEProductInfo, TuyaBLECoordinator, TuyaBLEData
+    from custom_components.tuya_ble.devices import (
+        TuyaBLEDevice,
+        TuyaBLEProductInfo,
+        TuyaBLECoordinator,
+        TuyaBLEData,
+    )
     from bleak.backends.device import BLEDevice
 
     entry = MockConfigEntry(
@@ -75,16 +85,14 @@ async def test_climate(hass: HomeAssistant) -> None:
         preset_mode_dp_ids={PRESET_AWAY: 106, PRESET_NONE: 106},
         current_temperature_dp_id=102,
         current_temperature_coefficient=10.0,
-        target_temperature_coefficient=10.0,
+        target_temperature_coefficient=2.0,
         target_temperature_step=0.5,
         target_temperature_dp_id=103,
         target_temperature_min=5.0,
         target_temperature_max=30.0,
     )
 
-    entity = TuyaBLEClimate(
-        hass, coordinator, device, product_info, mapping
-    )
+    entity = TuyaBLEClimate(hass, coordinator, device, product_info, mapping)
     entity.async_write_ha_state = Mock()
 
     # Initial availability and connected check

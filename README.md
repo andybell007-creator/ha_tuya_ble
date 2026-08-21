@@ -249,10 +249,15 @@ See a device marked Experimental you have? We could use real world testing feedb
       <td>—</td>
     </tr>
     <tr>
-      <td rowspan="2"><strong>Climate</strong></td>
-      <td><code>wk</code></td>
+      <td rowspan="3"><strong>Climate</strong></td>
+      <td rowspan="2"><code>wk</code></td>
       <td>Thermostatic Radiator Valve</td>
       <td><code>drlajpqc</code>, <code>nhj2j7su</code>, <code>zmachryv</code></td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>MaXpeedingrods Parking Heater</td>
+      <td><code>vmdizama</code></td>
       <td>—</td>
     </tr>
     <tr>
