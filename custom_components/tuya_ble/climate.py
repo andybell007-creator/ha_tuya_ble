@@ -202,9 +202,13 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
         if mapping.preset_mode_dp_ids:
             self._attr_supported_features |= ClimateEntityFeature.PRESET_MODE
             self._attr_preset_modes = list(mapping.preset_mode_dp_ids.keys())
-        elif mapping.level_dp_id and mapping.levels:
+        elif mapping.levels or mapping.modes:
             self._attr_supported_features |= ClimateEntityFeature.PRESET_MODE
-            self._attr_preset_modes = mapping.levels
+            self._attr_preset_modes = []
+            if mapping.modes:
+                self._attr_preset_modes.extend(mapping.modes)
+            if mapping.levels:
+                self._attr_preset_modes.extend(mapping.levels)
 
         if mapping.target_temperature_dp_id != 0:
             self._attr_supported_features |= ClimateEntityFeature.TARGET_TEMPERATURE
@@ -253,15 +257,16 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
         if self._mapping.mode_dp_id != 0 and self._mapping.modes:
             datapoint = self._device.datapoints[self._mapping.mode_dp_id]
             if datapoint and datapoint.value < len(self._mapping.modes):
-                self._attr_extra_state_attributes["mode"] = self._mapping.modes[datapoint.value]
+                mode_val = self._mapping.modes[datapoint.value]
+                self._attr_extra_state_attributes["mode"] = mode_val
+                self._attr_preset_mode = mode_val
 
         if self._mapping.level_dp_id != 0 and self._mapping.levels:
             datapoint = self._device.datapoints[self._mapping.level_dp_id]
             if datapoint and datapoint.value < len(self._mapping.levels):
                 level_val = self._mapping.levels[datapoint.value]
                 self._attr_extra_state_attributes["level"] = level_val
-                if not self._mapping.preset_mode_dp_ids:
-                    self._attr_preset_mode = level_val
+                self._attr_preset_mode = level_val
 
         if self._mapping.work_state_dp_id != 0:
             datapoint = self._device.datapoints[self._mapping.work_state_dp_id]
@@ -364,7 +369,16 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set new preset mode."""
-        if self._mapping.level_dp_id != 0 and self._mapping.levels and preset_mode in self._mapping.levels:
+        if self._mapping.modes and preset_mode in self._mapping.modes:
+            int_value = self._mapping.modes.index(preset_mode)
+            datapoint = self._device.datapoints.get_or_create(
+                self._mapping.mode_dp_id,
+                TuyaBLEDataPointType.DT_VALUE,
+                int_value,
+            )
+            if datapoint:
+                self._hass.create_task(datapoint.set_value(int_value))
+        elif self._mapping.levels and preset_mode in self._mapping.levels:
             int_value = self._mapping.levels.index(preset_mode)
             datapoint = self._device.datapoints.get_or_create(
                 self._mapping.level_dp_id,
