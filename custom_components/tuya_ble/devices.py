@@ -626,7 +626,7 @@ devices_database: dict[str, TuyaBLECategoryInfo] = {
     "qn": TuyaBLECategoryInfo(
         products={
             "vmdizama": TuyaBLEProductInfo(
-                name="MaXpeedingRods Parking Diesel Heater",
+                name="Diesel Heater",
                 manufacturer="MaXpeedingRods",
                 heater=TuyaBLEHeaterInfo(
                     switch="switch",
