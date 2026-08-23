@@ -325,7 +325,9 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
     async def async_set_temperature(self, **kwargs) -> None:
         """Set new target temperature."""
         if self._mapping.target_temperature_dp_id != 0:
-            int_value = int(kwargs["temperature"] * self._mapping.target_temperature_coefficient)
+            int_value = int(
+                kwargs["temperature"] * self._mapping.target_temperature_coefficient
+            )
             datapoint = self._device.datapoints.get_or_create(
                 self._mapping.target_temperature_dp_id,
                 TuyaBLEDataPointType.DT_VALUE,
@@ -396,9 +398,7 @@ class TuyaBLEClimate(TuyaBLEEntity, ClimateEntity):
             bool_value = False
 
             keys = [x for x in self._mapping.preset_mode_dp_ids.keys()]
-            values = [
-                x for x in self._mapping.preset_mode_dp_ids.values()
-            ]
+            values = [x for x in self._mapping.preset_mode_dp_ids.values()]
             if all(values[0] == elem for elem in values) and keys[0] == PRESET_AWAY:
                 for dp_id in values:
                     bool_value = preset_mode == PRESET_AWAY
