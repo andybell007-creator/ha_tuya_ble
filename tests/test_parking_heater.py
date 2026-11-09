@@ -218,11 +218,11 @@ async def test_exchanger_temperature(hass: HomeAssistant) -> None:
         return entity.native_value
 
     assert at(0, 10) == 10.0          # first reading shown immediately
-    assert at(1, 11) == 10.0          # +1 C within 30 s: held
-    assert at(2, 12) == 12.0          # +2 C: updated
-    assert at(10, 13) == 12.0         # held
-    assert at(32, 13) == 13.0         # 30 s since last update: refreshed
-    assert at(33, 11) == 11.0         # falling by 2: updated
+    assert at(1, 14) == 10.0          # +4 C within 30 s: held
+    assert at(2, 15) == 15.0          # +5 C: updated
+    assert at(10, 17) == 15.0         # held
+    assert at(32, 17) == 17.0         # 30 s since last update: refreshed
+    assert at(33, 12) == 12.0         # falling by 5: updated
     assert at(34, 162, switch=False) is None  # off: blank, not stuck
     assert at(35, None, switch=False) is None
     assert at(40, 9) == 9.0           # back on: fresh value immediately
@@ -244,9 +244,9 @@ async def test_exchanger_temperature_real_run(hass: HomeAssistant) -> None:
             entity._handle_coordinator_update()
         if not shown or shown[-1] != entity.native_value:
             shown.append(entity.native_value)
-        assert abs(entity.native_value - temp) < 2  # never more than ~2 C behind
+        assert abs(entity.native_value - temp) < 5  # never more than ~5 C behind
     # ~3,300 device reports collapse to a few hundred distinct states at most
-    assert len(shown) < 200, len(shown)
+    assert len(shown) < 150, len(shown)
     _dp(device, 1, BOOL, False)
     entity._handle_coordinator_update()
     assert entity.native_value is None
